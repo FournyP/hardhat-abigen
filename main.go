@@ -2,15 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"flag"
 	"io"
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/FournyP/hardhat-abigen/tui"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type HardhatOutput struct {
@@ -19,36 +17,33 @@ type HardhatOutput struct {
 }
 
 func main() {
-	requiredParams := []string{"abi", "out", "type", "pkg"}
-	params := make(map[string]string)
+	abiFile := flag.String("abi", "", "Path to the ABI file")
+	outFile := flag.String("out", "", "Path to the output file")
+	typeName := flag.String("type", "", "Type name")
+	pkgName := flag.String("pkg", "", "Package name")
 
-	for _, key := range requiredParams {
-		if val, exists := os.LookupEnv(strings.ToUpper(key)); exists {
-			params[key] = val
-		}
+	// Parse flags
+	flag.Parse()
+
+	// Prompt for missing values
+	if *abiFile == "" {
+		*abiFile = tui.PromptInput("Enter the ABI file path:")
 	}
 
-	missingKeys := []string{}
-	for _, key := range requiredParams {
-		if _, exists := params[key]; !exists {
-			missingKeys = append(missingKeys, key)
-		}
+	if *outFile == "" {
+		*outFile = tui.PromptInput("Enter the output directory:")
 	}
 
-	m := tui.NewModel(params, missingKeys)
-	p := tea.NewProgram(m)
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
+	if *typeName == "" {
+		*typeName = tui.PromptInput("Enter the type name:")
 	}
 
-	fmt.Println("Collected parameters:")
-	for k, v := range m.Params {
-		fmt.Printf("%s: %s\n", k, v)
+	if *pkgName == "" {
+		*pkgName = tui.PromptInput("Enter the package name:")
 	}
 
 	// Read and extract ABI
-	file, err := os.Open(m.Params["abi"])
+	file, err := os.Open(*abiFile)
 	if err != nil {
 		log.Fatalf("Failed to open file: %v", err)
 	}
@@ -86,7 +81,7 @@ func main() {
 	binTempFile.Close()
 
 	// Run abigen
-	cmd := exec.Command("abigen", "--abi="+abiTempPath, "--pkg="+m.Params["pkg"], "--type="+m.Params["type"], "--out="+m.Params["out"], "--bin="+binTempPath)
+	cmd := exec.Command("abigen", "--abi="+abiTempPath, "--pkg="+*pkgName, "--type="+*typeName, "--out="+*outFile, "--bin="+binTempPath)
 	err = cmd.Run()
 	if err != nil {
 		log.Fatalf("Failed to run abigen: %v", err)
