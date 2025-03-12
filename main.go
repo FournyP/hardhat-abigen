@@ -31,7 +31,7 @@ func main() {
 	}
 
 	if *outFile == "" {
-		*outFile = tui.PromptInput("Enter the output directory:")
+		*outFile = tui.PromptInput("Enter the output file:")
 	}
 
 	if *typeName == "" {
@@ -41,6 +41,11 @@ func main() {
 	if *pkgName == "" {
 		*pkgName = tui.PromptInput("Enter the package name:")
 	}
+
+	log.Println("ABI file:", *abiFile)
+	log.Println("Output file:", *outFile)
+	log.Println("Type name:", *typeName)
+	log.Println("Package name:", *pkgName)
 
 	// Read and extract ABI
 	file, err := os.Open(*abiFile)
@@ -79,6 +84,11 @@ func main() {
 	binTempPath := binTempFile.Name()
 	defer os.Remove(binTempPath)
 	binTempFile.Close()
+
+	log.Printf("ABI temp file: %s", abiTempPath)
+	log.Printf("Bytecode temp file: %s", binTempPath)
+
+	log.Printf("Generating Go bindings...")
 
 	// Run abigen
 	cmd := exec.Command("abigen", "--abi="+abiTempPath, "--pkg="+*pkgName, "--type="+*typeName, "--out="+*outFile, "--bin="+binTempPath)
